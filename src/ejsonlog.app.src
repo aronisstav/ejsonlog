@@ -1,0 +1,15 @@
+{application, ejsonlog,
+ [{description, "A drop-in formatter for Erlang's logging module that outputs messages as line delimited JSON."},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {ejsonlog_app, []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.
