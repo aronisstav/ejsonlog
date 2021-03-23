@@ -1,17 +1,46 @@
+%%% @doc Formatter module for Erlang's logger.
+%%%
+%%% For installation instructions please refer to Erlang logger's
+%%% configuration, e.g.
+%%% [http://erlang.org/doc/apps/kernel/logger_chapter.html#configuration-examples].
+%%%
+%%% You can configure the behaviour of the formatter using a map
+%%% {@link config()}.
+%%% @end
+
 -module(ejsonlog).
 
 -export([format/2]).
 
 %%--------------------------------------------------------------------
-
--type config() ::
-        #{ cb_fun := fun((logger:log_event()) -> term())
-         , time_offset := integer()
-         , time_designator := char()
-         }.
-
+%% Types
 %%--------------------------------------------------------------------
 
+-type config() ::
+        #{ json_fun := json_fun()
+         , time_offset := time_offset()
+         , time_designator := time_designator()
+         }.
+%% Formatter configuration parameters.
+
+-type json_fun() :: fun((logger:log_event()) -> term()).
+%% The function used to convert a map to JSON. Default is
+%% jiffy:encode/1.  The type of log_event is given here:
+%% [http://erlang.org/doc/man/logger.html#type-log_event]
+
+-type time_offset() :: integer().
+%% A time offset, as used by the relevant option to
+%% calendar:system_time_to_rfc3339/2. Default is 0.
+
+-type time_designator() :: char().
+%% A time designator, as used by the relevant option to
+%% calendar:system_time_to_rfc3339/2. Default is 'T'.
+
+%%--------------------------------------------------------------------
+%% API
+%%--------------------------------------------------------------------
+
+%% @doc The function used to generate a log line.
 -spec format(LogEvent, Config) -> unicode:chardata() when
     LogEvent :: logger:log_event(),
     Config :: config().
@@ -30,17 +59,19 @@ format(Map = #{msg := {Format, Terms}}, UsrConfig) ->
   format(Map#{msg := {report, #{text => txt(Format, Terms)}}}, UsrConfig).
 
 %%--------------------------------------------------------------------
+%% Internal functions
+%%--------------------------------------------------------------------
 
 apply_defaults(UsrConfig) ->
   Defaults =
-    #{ cb_fun => fun(LogEvent) -> jiffy:encode(LogEvent) end
+    #{ json_fun => fun(LogEvent) -> jiffy:encode(LogEvent) end
      , time_offset => 0
      , time_designator => $T
      },
   maps:merge(Defaults, UsrConfig).
 
 format_log(Data, Config) ->
-  #{ cb_fun := CbFun
+  #{ json_fun := CbFun
    } = Config,
   Sanitized = sanitize(Data, Config),
   try
